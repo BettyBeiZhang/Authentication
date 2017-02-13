@@ -1,8 +1,9 @@
 var express = require("express");
 var app = express(); 
+var mongoose = require("mongoose");
+mongoose.connect("mongodb://localhost/authDemo");
 
-
-// notice this is the setup to render ejs template
+// notice that this's the setup to render ejs template
 app.set("view engine", "ejs");
 
 
@@ -15,7 +16,6 @@ app.get("/", function(req, res){
 app.get('/secret', function(req, res){
 	res.render("secret");
 });
-
 
 
 
