@@ -8,9 +8,12 @@ var passportLocalMongoose = require("passport-local-mongoose");
 
 var mongoose = require("mongoose");
 mongoose.connect("mongodb://localhost/authDemo");
+// var connection = mongoose.createConnection("mongodb://localhost/authDemo", {server: {poolSize: 1}});
+
 
 // notice that this's the setup to render ejs template
 app.set("view engine", "ejs");
+app.use(bodyParser.urlencoded({extended:true}));
 
 app.use(require("express-session")({
 	// this secret message gonna use for encode or decode the sessions... 
@@ -22,21 +25,68 @@ app.use(require("express-session")({
 app.use(passport.initialize()); 
 app.use(passport.session());
 
-// those two methods responsible for reading and taling the data from session that's encoded. deserializer is for uncode it. 
-// we don't have to do user.serializeUser. we're using the one come with passportlicaomongoose just telling passport to use
-passport.serializeUser(	User.serializeUser());
+
+passport.use(new localStrategy(User.authenticate()));// User.authenticate from passport-local-mongoose
+passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
+
+
+/// ROUTES
 
 app.get("/", function(req, res){
 	res.render("home");
 });
 
 
-app.get('/secret', function(req, res){
-	res.render("secret");
+app.get("/secret",isLoggedIn, function(req, res){
+   res.render("secret"); 
+});
+
+app.get('/login', function(req, res) {
+	res.render("login"); 
+});
+
+/// AUTH ROUTES
+app.get("/register", function(req, res){
+	res.render('register');
+}); 
+
+app.post("/register", function(req, res){ 
+	//handleing user sign up
+		User.register(new User({username: req.body.username}), req.body.password, function(err, user){
+		if(err){
+			console.log(err);
+			return res.render('register');
+		}
+		passport.authenticate("local")(req, res, function(){
+			res.redirect('/secret');
+		});
+	});
 });
 
 
+app.get("/logout", function(req, res) {
+	req.logout();
+	res.redirect("/");
+
+}); 
+
+//handle user login , middleware: passport.authenticate()
+app.post("/login", passport.authenticate("local", {
+	successRedirect: "/secret",
+	failureRedirect: "/login"
+}), function(req, res) {
+});
+
+
+function isLoggedIn(req, res, next) {
+	//isAuthenticated is the function from passport 
+	if(req.isAuthenticated()) {
+		return next();
+	}
+	res.redirect("/login");
+
+}
 
 
 var port= 3000; 
